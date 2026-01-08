@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/tapFragment"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Tap" />
+    <item
+        android:id="@+id/statsFragment"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="Stats" />
+    <item
+        android:id="@+id/pairingFragment"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="Pairing" />
+    <item
+        android:id="@+id/whitelistFragment"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Allowed" />
+</menu>

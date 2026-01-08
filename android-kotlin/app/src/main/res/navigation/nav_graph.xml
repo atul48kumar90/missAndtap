@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/tapFragment">
+
+    <fragment
+        android:id="@+id/tapFragment"
+        android:name="com.tapme.app.ui.tap.TapFragment"
+        android:label="Tap" />
+
+    <fragment
+        android:id="@+id/statsFragment"
+        android:name="com.tapme.app.ui.stats.StatsFragment"
+        android:label="Stats" />
+
+    <fragment
+        android:id="@+id/pairingFragment"
+        android:name="com.tapme.app.ui.pairing.PairingFragment"
+        android:label="Pairing" />
+
+    <fragment
+        android:id="@+id/whitelistFragment"
+        android:name="com.tapme.app.ui.whitelist.WhitelistFragment"
+        android:label="Allowed Tappers" />
+
+</navigation>
