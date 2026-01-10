@@ -12,8 +12,7 @@ backend/.env.example
 # Build outputs
 build/
 backend/build/
-android-kotlin/build/
-android-kotlin/app/build/
+app/build/
 *.apk
 *.aab
 *.ap_
@@ -40,7 +39,7 @@ yarn-error.log*
 
 # Firebase
 google-services.json
-android-kotlin/app/google-services.json
+app/google-services.json
 firebase-debug.log
 firestore-debug.log
 
@@ -55,11 +54,8 @@ temp/
 *.tmp
 
 # Android
-android-kotlin/.gradle/
-android-kotlin/local.properties
-android-kotlin/.idea/
-android-kotlin/*.iml
-android-kotlin/app/*.iml
+local.properties
+app/*.iml
 
 # Gradle
 .gradle/
