@@ -1,6 +1,10 @@
 package com.tapme.app
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
@@ -19,6 +23,15 @@ import android.provider.Settings
 class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferencesManager: PreferencesManager
+    
+    private val tokenInvalidReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "com.tapme.app.ACTION_TOKEN_INVALID") {
+                Log.d("MainActivity", "Received token invalid broadcast. Re-registering...")
+                registerUser()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +41,15 @@ class MainActivity : AppCompatActivity() {
         
         // Initialize RetrofitClient with context
         RetrofitClient.init(applicationContext)
+
+        // Register broadcast receiver for token invalid events
+        val filter = IntentFilter("com.tapme.app.ACTION_TOKEN_INVALID")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(tokenInvalidReceiver, filter, RECEIVER_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(tokenInvalidReceiver, filter)
+        }
 
         // Register/Login user on app start
         registerUser()
@@ -50,6 +72,24 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleDeepLink(intent)
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if token was cleared (e.g., due to 401 error) and re-register if needed
+        if (preferencesManager.getToken() == null) {
+            Log.d("MainActivity", "Token missing on resume. Re-registering...")
+            registerUser()
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(tokenInvalidReceiver)
+        } catch (e: Exception) {
+            // Receiver might not be registered, ignore
+        }
     }
     
     private fun handleDeepLink(intent: Intent) {
@@ -88,12 +128,16 @@ class MainActivity : AppCompatActivity() {
         preferencesManager.saveDeviceId(deviceId)
 
         // Check if already registered (has token)
-        if (preferencesManager.getToken() != null) {
+        val existingToken = preferencesManager.getToken()
+        if (existingToken != null) {
             Log.d("MainActivity", "User already registered. Updating FCM token if available.")
             // Just update FCM token if available
             updateFcmToken(deviceId)
             return
         }
+        
+        // No token - need to register
+        Log.d("MainActivity", "No token found. Registering user...")
 
         // Get FCM token (if Firebase is available) before registering
         try {

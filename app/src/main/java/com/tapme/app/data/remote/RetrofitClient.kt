@@ -81,6 +81,36 @@ object RetrofitClient {
 
     private val cacheInterceptor = CacheInterceptor()
 
+    // Auth interceptor to handle 401 errors and clear invalid tokens
+    private val authInterceptor = object : okhttp3.Interceptor {
+        override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
+            val request = chain.request()
+            val requestBuilder = request.newBuilder()
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+
+            val response = chain.proceed(requestBuilder.build())
+
+            // Handle 401 Unauthorized - clear invalid token and trigger re-registration
+            if (response.code == 401) {
+                context?.let { ctx ->
+                    val prefs = ctx.getSharedPreferences("tapme_prefs", Context.MODE_PRIVATE)
+                    val hadToken = prefs.contains("auth_token")
+                    if (hadToken) {
+                        prefs.edit().remove("auth_token").apply()
+                        android.util.Log.w("RetrofitClient", "401 Unauthorized - Cleared invalid token. Triggering re-registration.")
+                        
+                        // Broadcast intent to trigger re-registration
+                        val intent = android.content.Intent("com.tapme.app.ACTION_TOKEN_INVALID")
+                        ctx.sendBroadcast(intent)
+                    }
+                }
+            }
+
+            return response
+        }
+    }
+
     private val okHttpClient: OkHttpClient by lazy {
         val builder = OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
@@ -88,13 +118,7 @@ object RetrofitClient {
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(cacheInterceptor)
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Accept", "application/json")
-                    .build()
-                chain.proceed(request)
-            }
+            .addInterceptor(authInterceptor)
 
         // Add cache if context is available
         context?.let {
