@@ -2,8 +2,6 @@
 <resources>
     <string name="app_name">Tap Me</string>
     <string name="tap_when_you_miss_me">Tap when you miss me</string>
-    <string name="not_paired_yet">Not paired yet</string>
-    <string name="go_to_pairing">Go to Pairing to connect with someone</string>
     <string name="last_tap">Last tap: %1$s</string>
     <string name="today_taps">Today: %1$d taps</string>
 </resources>

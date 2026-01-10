@@ -4,13 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.tapme.app.R
 import com.tapme.app.domain.models.TapType
 import com.tapme.app.ui.tap.TapViewModel
 import com.tapme.app.utils.DateFormatter
+import com.tapme.app.utils.AnticipationTimer
+import com.tapme.app.utils.PatternManager
 import com.google.android.material.card.MaterialCardView
 import java.util.Date
 
@@ -22,7 +26,13 @@ class TapFragment : Fragment() {
     private lateinit var streakTextView: android.widget.TextView
     private lateinit var tapsRemainingTextView: android.widget.TextView
     private lateinit var cooldownTextView: android.widget.TextView
+    private lateinit var tapPatternText: android.widget.TextView
     private lateinit var loadingIndicator: android.widget.ProgressBar
+    private lateinit var recipientList: androidx.recyclerview.widget.RecyclerView
+    private lateinit var noRecipientsText: TextView
+    private lateinit var tapButtonsScrollView: android.widget.ScrollView
+    private var recipientAdapter: RecipientAdapter? = null
+    private val anticipationTimer = AnticipationTimer()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,15 +47,50 @@ class TapFragment : Fragment() {
 
         viewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application))[TapViewModel::class.java]
 
+        // Stats are now in the stats card at the top
         lastTapTimeView = view.findViewById(R.id.lastTapTime)
         todayTapCountView = view.findViewById(R.id.todayTapCount)
         streakTextView = view.findViewById(R.id.streakText)
         tapsRemainingTextView = view.findViewById(R.id.tapsRemainingText)
         cooldownTextView = view.findViewById(R.id.cooldownText)
+        tapPatternText = view.findViewById(R.id.tapPatternText)
         loadingIndicator = view.findViewById(R.id.loadingIndicator)
+        recipientList = view.findViewById(R.id.recipientList)
+        noRecipientsText = view.findViewById(R.id.noRecipientsText)
+        tapButtonsScrollView = view.findViewById(R.id.tapButtonsScrollView)
+        
+        // Initialize visibility for new layout
+        streakTextView.visibility = View.GONE
+        tapsRemainingTextView.visibility = View.GONE
+        cooldownTextView.visibility = View.GONE
+
+        // Setup recipient list with horizontal scrolling
+        recipientList.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        recipientList.setHasFixedSize(false)
+        // Add padding on the end to make it clear there's scrollable content (handled in XML)
 
         // Setup tap type buttons
         setupTapButtons(view)
+
+        // Observe allowed tappers
+        viewModel.allowedTappers.observe(viewLifecycleOwner) { tappers ->
+            updateRecipientList(tappers)
+        }
+
+        // Observe selected recipient
+        viewModel.selectedRecipient.observe(viewLifecycleOwner) { recipient ->
+            recipientAdapter?.let { adapter ->
+                adapter.notifyDataSetChanged()
+            }
+            // Show/hide tap buttons based on selection
+            if (recipient != null) {
+                tapButtonsScrollView.visibility = View.VISIBLE
+                enableTapButtons(view, true)
+            } else {
+                tapButtonsScrollView.visibility = View.GONE
+                enableTapButtons(view, false)
+            }
+        }
 
         // Observe view model state
         viewModel.tapState.observe(viewLifecycleOwner) { state ->
@@ -61,53 +106,137 @@ class TapFragment : Fragment() {
                     loadingIndicator.visibility = View.GONE
                     Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                 }
-                is TapState.NotPaired -> {
+                is TapState.NoRecipients -> {
                     loadingIndicator.visibility = View.GONE
-                    showNotPairedState(view)
+                    noRecipientsText.visibility = View.VISIBLE
+                    recipientList.visibility = View.GONE
+                    tapButtonsScrollView.visibility = View.GONE
                 }
             }
         }
     }
 
+    private fun updateRecipientList(tappers: List<com.tapme.app.data.remote.AllowedTapper>) {
+        if (tappers.isEmpty()) {
+            recipientList.visibility = View.GONE
+            noRecipientsText.visibility = View.VISIBLE
+            tapButtonsScrollView.visibility = View.GONE
+        } else {
+            recipientList.visibility = View.VISIBLE
+            noRecipientsText.visibility = View.GONE
+            recipientAdapter = RecipientAdapter(
+                tappers,
+                viewModel.selectedRecipient.value,
+                { recipient -> viewModel.selectRecipient(recipient) }
+            )
+            recipientList.adapter = recipientAdapter
+        }
+    }
+
+    private fun enableTapButtons(view: View, enabled: Boolean) {
+        val buttons = listOf(
+            R.id.btnHappyMiss, R.id.btnSadMiss, R.id.btnNaughtyMiss, R.id.btnLovingMiss,
+            R.id.btnExcitedMiss, R.id.btnSleepyMiss, R.id.btnPlayfulMiss, R.id.btnThinkingMiss,
+            R.id.btnRomanticMiss, R.id.btnCustomEmoji
+        )
+        buttons.forEach { buttonId ->
+            view.findViewById<View>(buttonId)?.isEnabled = enabled
+            view.findViewById<View>(buttonId)?.alpha = if (enabled) 1.0f else 0.5f
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh stats and allowed tappers when fragment becomes visible
+        viewModel.refreshStats()
+        viewModel.loadAllowedTappers()
+        
+        // Start anticipation timer with last tap time
+        val currentState = viewModel.tapState.value
+        if (currentState is TapState.Success) {
+            currentState.lastTapTime?.let { timestampLong ->
+                // lastTapTime is already a Long (milliseconds since epoch)
+                anticipationTimer.start(timestampLong) { timeText ->
+                    lastTapTimeView.text = "Last tap: $timeText"
+                }
+            }
+        }
+        
+        // Check tap patterns and show "It's usually tap time!" if applicable
+        checkTapPatterns()
+    }
+    
+    private fun checkTapPatterns() {
+        val patternManager = PatternManager.getInstance(requireContext())
+        
+        // Check if it's "tap time"
+        patternManager.checkTapTime { isTapTime, message ->
+            if (isTapTime && message != null) {
+                tapPatternText.text = message
+                tapPatternText.visibility = android.view.View.VISIBLE
+            } else {
+                // Show pattern insights if available
+                patternManager.getPatterns { patterns ->
+                    patterns?.insights?.firstOrNull()?.let { insight ->
+                        tapPatternText.text = insight.message
+                        tapPatternText.visibility = android.view.View.VISIBLE
+                    } ?: run {
+                        tapPatternText.visibility = android.view.View.GONE
+                    }
+                }
+            }
+        }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        anticipationTimer.stop()
+    }
+
     private fun setupTapButtons(view: View) {
         // Happy Miss
         view.findViewById<MaterialCardView>(R.id.btnHappyMiss).setOnClickListener {
-            sendTap(TapType.HAPPY_MISS)
+            viewModel.sendTap(TapType.HAPPY_MISS)
         }
 
         // Sad Miss
         view.findViewById<MaterialCardView>(R.id.btnSadMiss).setOnClickListener {
-            sendTap(TapType.SAD_MISS)
+            viewModel.sendTap(TapType.SAD_MISS)
         }
 
         // Naughty Miss
         view.findViewById<MaterialCardView>(R.id.btnNaughtyMiss).setOnClickListener {
-            sendTap(TapType.NAUGHTY_MISS)
+            viewModel.sendTap(TapType.NAUGHTY_MISS)
         }
 
         // Loving Miss
         view.findViewById<MaterialCardView>(R.id.btnLovingMiss).setOnClickListener {
-            sendTap(TapType.LOVING_MISS)
+            viewModel.sendTap(TapType.LOVING_MISS)
         }
 
         // Excited Miss
         view.findViewById<MaterialCardView>(R.id.btnExcitedMiss).setOnClickListener {
-            sendTap(TapType.EXCITED_MISS)
+            viewModel.sendTap(TapType.EXCITED_MISS)
         }
 
         // Sleepy Miss
         view.findViewById<MaterialCardView>(R.id.btnSleepyMiss).setOnClickListener {
-            sendTap(TapType.SLEEPY_MISS)
+            viewModel.sendTap(TapType.SLEEPY_MISS)
         }
 
         // Playful Miss
         view.findViewById<MaterialCardView>(R.id.btnPlayfulMiss).setOnClickListener {
-            sendTap(TapType.PLAYFUL_MISS)
+            viewModel.sendTap(TapType.PLAYFUL_MISS)
         }
 
         // Thinking Miss
         view.findViewById<MaterialCardView>(R.id.btnThinkingMiss).setOnClickListener {
-            sendTap(TapType.THINKING_MISS)
+            viewModel.sendTap(TapType.THINKING_MISS)
+        }
+
+        // Romantic Miss (using LOVING_MISS type for now)
+        view.findViewById<MaterialCardView>(R.id.btnRomanticMiss)?.setOnClickListener {
+            viewModel.sendTap(TapType.LOVING_MISS)
         }
 
         // Custom Emoji
@@ -120,10 +249,19 @@ class TapFragment : Fragment() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_custom_emoji, null)
         val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setView(dialogView)
+            .setCancelable(true)
             .create()
+
+        // Apply rounded corners to dialog
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            dialog.window?.statusBarColor = android.graphics.Color.TRANSPARENT
+        }
 
         val emojiInput = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.emojiInput)
         val emojiPreview = dialogView.findViewById<android.widget.TextView>(R.id.emojiPreview)
+        val emojiPlaceholder = dialogView.findViewById<android.widget.TextView>(R.id.emojiPlaceholder)
+        val emojiPreviewHint = dialogView.findViewById<android.widget.TextView>(R.id.emojiPreviewHint)
         val errorText = dialogView.findViewById<android.widget.TextView>(R.id.errorText)
         val btnSend = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSend)
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancel)
@@ -133,13 +271,35 @@ class TapFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
-                val text = s?.toString() ?: ""
+                val text = s?.toString()?.trim() ?: ""
                 if (text.isNotEmpty()) {
                     emojiPreview?.text = text
                     emojiPreview?.visibility = android.view.View.VISIBLE
+                    emojiPlaceholder?.visibility = android.view.View.GONE
+                    emojiPreviewHint?.text = "${text.length}/10"
                     errorText?.visibility = android.view.View.GONE
+                    
+                    // Animate emoji preview appearance
+                    emojiPreview?.alpha = 0f
+                    emojiPreview?.animate()?.apply {
+                        alpha(1f)
+                        scaleX(1.1f)
+                        scaleY(1.1f)
+                        duration = 200
+                        withEndAction {
+                            emojiPreview?.animate()?.apply {
+                                scaleX(1f)
+                                scaleY(1f)
+                                duration = 150
+                                start()
+                            }
+                        }
+                        start()
+                    }
                 } else {
                     emojiPreview?.visibility = android.view.View.GONE
+                    emojiPlaceholder?.visibility = android.view.View.VISIBLE
+                    emojiPreviewHint?.text = "Preview"
                 }
             }
         })
@@ -148,7 +308,7 @@ class TapFragment : Fragment() {
             dialog.dismiss()
         }
 
-        btnSend?.setOnClickListener {
+        btnSend.setOnClickListener {
             val emoji = emojiInput?.text?.toString()?.trim() ?: ""
             val message = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.messageInput)?.text?.toString()?.trim()
             
@@ -231,20 +391,51 @@ class TapFragment : Fragment() {
     }
 
     private fun updateUI(state: TapState.Success) {
+        // Enable all tap buttons (user is paired) - restore full opacity and clickability
+        val cards = listOf(
+            view?.findViewById<View>(R.id.btnHappyMiss),
+            view?.findViewById<View>(R.id.btnSadMiss),
+            view?.findViewById<View>(R.id.btnNaughtyMiss),
+            view?.findViewById<View>(R.id.btnLovingMiss),
+            view?.findViewById<View>(R.id.btnExcitedMiss),
+            view?.findViewById<View>(R.id.btnSleepyMiss),
+            view?.findViewById<View>(R.id.btnPlayfulMiss),
+            view?.findViewById<View>(R.id.btnThinkingMiss),
+            view?.findViewById<View>(R.id.btnRomanticMiss),
+            view?.findViewById<View>(R.id.btnCustomEmoji)
+        )
+        
+        cards.forEach { card ->
+            card?.isClickable = true
+            card?.isFocusable = true
+            card?.alpha = 1.0f // Restore full opacity
+        }
+        
+        // Hide "not paired" card
+        view?.findViewById<com.google.android.material.card.MaterialCardView>(R.id.notPairedCard)?.visibility = View.GONE
+        
+        // Update last tap time
         state.lastTapTime?.let {
             lastTapTimeView.text = "Last tap: ${DateFormatter.formatTimeAgo(Date(it))}"
             lastTapTimeView.visibility = View.VISIBLE
         } ?: run {
-            lastTapTimeView.visibility = View.GONE
+            lastTapTimeView.text = "Last tap: Never"
+            lastTapTimeView.visibility = View.VISIBLE
         }
 
-        todayTapCountView.text = "Today: ${state.todayTapCount} taps"
+        // Update today's tap count (now in stats card)
+        todayTapCountView.text = "${state.todayTapCount}"
         
-        // Show streak if available
+        // Show streak if available (now in stats card)
+        val streakContainer = view?.findViewById<ViewGroup>(R.id.streakContainer)
+        val divider1 = view?.findViewById<View>(R.id.divider1)
+        
         state.streak?.let { streak ->
             if (streak > 0) {
-                streakTextView.text = "🔥 $streak day streak!"
-                streakTextView.visibility = View.VISIBLE
+                streakTextView.text = "🔥 $streak"
+                streakTextView.visibility = View.VISIBLE // Make sure it's visible
+                streakContainer?.visibility = View.VISIBLE
+                divider1?.visibility = View.VISIBLE
                 
                 // Gentle animation for streak
                 streakTextView.alpha = 0f
@@ -254,21 +445,31 @@ class TapFragment : Fragment() {
                     .start()
             } else {
                 streakTextView.visibility = View.GONE
+                streakContainer?.visibility = View.GONE
+                divider1?.visibility = View.GONE
             }
         } ?: run {
             streakTextView.visibility = View.GONE
+            streakContainer?.visibility = View.GONE
+            divider1?.visibility = View.GONE
         }
         
         // Show remaining taps (creates scarcity)
+        val remainingContainer = view?.findViewById<ViewGroup>(R.id.remainingContainer)
+        val divider2 = view?.findViewById<View>(R.id.divider2)
+        
         state.dailyRemaining?.let { remaining ->
             if (remaining >= 0) {
-                tapsRemainingTextView.text = "💝 $remaining tap${if (remaining != 1) "s" else ""} remaining today"
-                tapsRemainingTextView.visibility = View.VISIBLE
+                tapsRemainingTextView.text = "$remaining"
+                remainingContainer?.visibility = View.VISIBLE
+                divider2?.visibility = View.VISIBLE
             } else {
-                tapsRemainingTextView.visibility = View.GONE
+                remainingContainer?.visibility = View.GONE
+                divider2?.visibility = View.GONE
             }
         } ?: run {
-            tapsRemainingTextView.visibility = View.GONE
+            remainingContainer?.visibility = View.GONE
+            divider2?.visibility = View.GONE
         }
         
         // Show cooldown if active (creates anticipation)
@@ -285,9 +486,27 @@ class TapFragment : Fragment() {
     }
 
     private fun showNotPairedState(view: View) {
-        // Hide tap buttons, show message
-        view.findViewById<View>(R.id.btnHappyMiss).visibility = View.GONE
-        // ... hide other buttons
-        // Show "Not paired" message
+        // Keep cards visible but disable them (reduce opacity), show message
+        val cards = listOf(
+            view.findViewById<View>(R.id.btnHappyMiss),
+            view.findViewById<View>(R.id.btnSadMiss),
+            view.findViewById<View>(R.id.btnNaughtyMiss),
+            view.findViewById<View>(R.id.btnLovingMiss),
+            view.findViewById<View>(R.id.btnExcitedMiss),
+            view.findViewById<View>(R.id.btnSleepyMiss),
+            view.findViewById<View>(R.id.btnPlayfulMiss),
+            view.findViewById<View>(R.id.btnThinkingMiss),
+            view.findViewById<View>(R.id.btnRomanticMiss),
+            view.findViewById<View>(R.id.btnCustomEmoji)
+        )
+        
+        cards.forEach { card ->
+            card?.isClickable = false
+            card?.isFocusable = false
+            card?.alpha = 0.5f // Make them look disabled
+        }
+        
+        // Show "Not paired" card
+        view.findViewById<com.google.android.material.card.MaterialCardView>(R.id.notPairedCard)?.visibility = View.VISIBLE
     }
 }

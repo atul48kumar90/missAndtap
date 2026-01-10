@@ -16,12 +16,14 @@ import com.tapme.app.R
 import com.tapme.app.data.remote.RetrofitClient
 import com.tapme.app.ui.whitelist.WhitelistViewModel
 import com.tapme.app.utils.PreferencesManager
+import com.tapme.app.utils.ShareHelper
 
 class WhitelistFragment : Fragment() {
 
     private lateinit var viewModel: WhitelistViewModel
     private lateinit var preferencesManager: PreferencesManager
     private lateinit var adapter: AllowedTappersAdapter
+    private lateinit var shareHelper: ShareHelper
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,6 +37,7 @@ class WhitelistFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         preferencesManager = PreferencesManager(requireContext())
+        shareHelper = ShareHelper(requireContext())
         viewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application))[WhitelistViewModel::class.java]
 
         setupUI(view)
@@ -46,8 +49,9 @@ class WhitelistFragment : Fragment() {
         val myUserCodeText = view.findViewById<android.widget.TextView>(R.id.myUserCodeText)
         val btnCopyCode = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCopyCode)
         val btnShareCode = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnShareCode)
-        val btnRegenerateCode = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnRegenerateCode)
+        val btnRegenerateCode = view.findViewById<View>(R.id.btnRegenerateCode)
         val userCodeInput = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.userCodeInput)
+        val nicknameInput = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.nicknameInput)
         val btnAddTapper = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTapper)
         val allowedTappersList = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.allowedTappersList)
 
@@ -67,14 +71,10 @@ class WhitelistFragment : Fragment() {
             Toast.makeText(requireContext(), "Code copied!", Toast.LENGTH_SHORT).show()
         }
 
-        // Share code
+        // Share code - Show share options dialog
         btnShareCode.setOnClickListener {
             val code = myUserCodeText.text.toString()
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, "Add me on TapMe! My user code is: $code")
-            }
-            startActivity(Intent.createChooser(shareIntent, "Share User Code"))
+            showShareOptionsDialog(code)
         }
 
         // Regenerate code
@@ -102,8 +102,10 @@ class WhitelistFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            viewModel.addTapper(userCode)
+            val nickname = nicknameInput?.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }
+            viewModel.addTapper(userCode, nickname)
             userCodeInput?.text?.clear()
+            nicknameInput?.text?.clear()
         }
     }
 
@@ -134,5 +136,69 @@ class WhitelistFragment : Fragment() {
     private fun loadData() {
         viewModel.loadUserCode()
         viewModel.loadAllowedTappers()
+        
+        // Check if there's a temp invite code from deep link
+        val tempCode = preferencesManager.getTempInviteCode()
+        if (tempCode != null) {
+            // Pre-fill the code input
+            view?.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.userCodeInput)?.setText(tempCode)
+            // Clear temp code after using it
+            preferencesManager.clearTempInviteCode()
+        }
+    }
+    
+    private fun showShareOptionsDialog(userCode: String) {
+        val options = arrayOf(
+            "Share via WhatsApp",
+            "Share via SMS",
+            "Show QR Code",
+            "Share QR Code",
+            "Share via Other Apps",
+            "Copy Invite Link"
+        )
+        
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Share Your Code")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> shareHelper.shareViaWhatsApp(userCode)
+                    1 -> shareHelper.shareViaSMS(userCode)
+                    2 -> showQRCodeDialog(userCode)
+                    3 -> shareHelper.shareQRCode(userCode)
+                    4 -> shareHelper.shareViaSystem(userCode)
+                    5 -> shareHelper.copyDeepLink(userCode)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showQRCodeDialog(userCode: String) {
+        val qrBitmap = shareHelper.generateQRCode(userCode, 512)
+        if (qrBitmap == null) {
+            android.widget.Toast.makeText(requireContext(), "Unable to generate QR code", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_qr_code, null)
+        val qrImageView = dialogView.findViewById<android.widget.ImageView>(R.id.qrCodeImage)
+        val codeTextView = dialogView.findViewById<android.widget.TextView>(R.id.qrCodeText)
+        val shareButton = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnShareQR)
+        
+        qrImageView.setImageBitmap(qrBitmap)
+        codeTextView.text = userCode
+        
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Scan to Add Me")
+            .setView(dialogView)
+            .setPositiveButton("Close", null)
+            .create()
+        
+        shareButton.setOnClickListener {
+            shareHelper.shareQRCode(userCode)
+            dialog.dismiss()
+        }
+        
+        dialog.show()
     }
 }

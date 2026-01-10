@@ -33,11 +33,20 @@ class AllowedTappersAdapter(
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val tapperCodeText: TextView = itemView.findViewById(R.id.tapperCodeText)
+        private val tapperCodeSubtext: TextView = itemView.findViewById(R.id.tapperCodeSubtext)
         private val addedDateText: TextView = itemView.findViewById(R.id.addedDateText)
         private val btnRemove = itemView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnRemove)
 
         fun bind(tapper: AllowedTapper) {
-            tapperCodeText.text = tapper.tapperUserCode
+            // Show nickname if available, otherwise show code
+            if (tapper.nickname != null && tapper.nickname.isNotEmpty()) {
+                tapperCodeText.text = tapper.nickname
+                tapperCodeSubtext.text = tapper.tapperUserCode
+                tapperCodeSubtext.visibility = View.VISIBLE
+            } else {
+                tapperCodeText.text = tapper.tapperUserCode
+                tapperCodeSubtext.visibility = View.GONE
+            }
 
             // Format added date
             try {

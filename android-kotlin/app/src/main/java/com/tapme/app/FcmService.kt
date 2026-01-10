@@ -17,6 +17,9 @@ import com.google.firebase.messaging.RemoteMessage
 import com.tapme.app.domain.models.TapType
 import com.tapme.app.ui.incoming.IncomingTapActivity
 import com.tapme.app.utils.AppStateManager
+import com.tapme.app.utils.SilentModeManager
+import com.tapme.app.utils.SoundManager
+import com.tapme.app.utils.BadgeManager
 
 class FcmService : FirebaseMessagingService() {
 
@@ -43,8 +46,8 @@ class FcmService : FirebaseMessagingService() {
 
     private fun handleDataMessage(data: Map<String, String>, notification: RemoteMessage.Notification?) {
         val type = data["type"]
-        val pairId = data["pairId"]
-        val fromUserId = data["fromUserId"] // Backend should send this
+        val toUserId = data["toUserId"] // Recipient user ID (current user)
+        val fromUserId = data["fromUserId"] // Sender user ID
         val tapTypeStr = data["tapType"]
         val customEmoji = data["customEmoji"]
         val message = data["message"]
@@ -65,16 +68,26 @@ class FcmService : FirebaseMessagingService() {
                 // Check if app is in foreground (online)
                 val isAppForeground = AppStateManager.getInstance().isAppForeground()
                 
-                if (isAppForeground && pairId != null) {
+                // Check silent mode
+                val silentModeManager = SilentModeManager(this)
+                val isSilentMode = silentModeManager.isSilentModeActive()
+                
+                if (isAppForeground && fromUserId != null) {
                     // App is in foreground - show full-screen like incoming call
-                    showFullScreenTap(pairId, fromUserId ?: "", tapTypeStr ?: "", customEmoji, message)
+                    // Play sound if not in silent mode
+                    if (!isSilentMode && tapType != null) {
+                        SoundManager.getInstance(this).playSound(tapType)
+                    }
+                    showFullScreenTap(fromUserId, tapTypeStr ?: "", customEmoji, message)
                 } else {
-                    // App is in background - show normal notification
-                    if (tapType != null) {
-                        vibrate(tapType)
-                    } else {
-                        // Default vibration for custom emoji
-                        vibrate(TapType.LOVING_MISS)
+                    // App is in background - show normal notification (silent if in silent mode)
+                    if (!isSilentMode) {
+                        if (tapType != null) {
+                            vibrate(tapType)
+                        } else {
+                            // Default vibration for custom emoji
+                            vibrate(TapType.LOVING_MISS)
+                        }
                     }
                     
                     val title = if (isCustomEmoji) {
@@ -92,18 +105,21 @@ class FcmService : FirebaseMessagingService() {
                         tapType?.notificationBody ?: "Someone is thinking of you"
                     }
                     
-                    showNotification(title, body, tapType, customEmoji)
+                    // Show notification (will be silent if in silent mode)
+                    showNotification(title, body, tapType, customEmoji, isSilentMode)
+                    
+                    // Increment badge count (creates FOMO)
+                    BadgeManager.getInstance(this).incrementUnreadCount()
                 }
                 
-                Log.d(TAG, "Received ${if (isCustomEmoji) "custom emoji" else tapType?.displayName ?: "tap"} notification for pair: $pairId (foreground: $isAppForeground)")
+                Log.d(TAG, "Received ${if (isCustomEmoji) "custom emoji" else tapType?.displayName ?: "tap"} notification from user: $fromUserId (foreground: $isAppForeground)")
             }
         }
     }
     
-    private fun showFullScreenTap(pairId: String, fromUserId: String, tapType: String, customEmoji: String?, message: String?) {
+    private fun showFullScreenTap(fromUserId: String, tapType: String, customEmoji: String?, message: String?) {
         val intent = IncomingTapActivity.createIntent(
             this,
-            pairId,
             fromUserId,
             tapType,
             customEmoji,
@@ -122,7 +138,7 @@ class FcmService : FirebaseMessagingService() {
         vibrate(tapTypeEnum)
     }
     
-    private fun showNotification(title: String, body: String, tapType: TapType?, customEmoji: String?) {
+    private fun showNotification(title: String, body: String, tapType: TapType?, customEmoji: String?, isSilent: Boolean = false) {
         val channelId = "tap_channel"
         val notificationId = System.currentTimeMillis().toInt()
 
@@ -151,22 +167,30 @@ class FcmService : FirebaseMessagingService() {
         )
 
         // Build notification
-        val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info) // You can add custom icon later
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)
-            .setSound(defaultSoundUri)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setPriority(if (isSilent) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_HIGH)
+        
+        // Only add sound and vibration if not in silent mode
+        if (!isSilent) {
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            notificationBuilder
+                .setSound(defaultSoundUri)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+            
+            // Add vibration pattern if available
+            val vibrationPattern = tapType?.vibrationPattern ?: TapType.LOVING_MISS.vibrationPattern
+            notificationBuilder.setVibrate(vibrationPattern)
+        } else {
+            // Silent mode: no sound, no vibration
+            notificationBuilder.setDefaults(0)
+        }
 
-        // Add vibration pattern if available
-        val vibrationPattern = tapType?.vibrationPattern ?: TapType.LOVING_MISS.vibrationPattern
-        notificationBuilder.setVibrate(vibrationPattern)
-
-        val notificationManager = getSystemService(Context.NOTIFICATION_MANAGER) as NotificationManager
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
@@ -236,7 +260,7 @@ class FcmService : FirebaseMessagingService() {
             notificationBuilder.setVibrate(it.vibrationPattern)
         }
 
-        val notificationManager = getSystemService(Context.NOTIFICATION_MANAGER) as NotificationManager
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationId, notificationBuilder.build())
     }
 

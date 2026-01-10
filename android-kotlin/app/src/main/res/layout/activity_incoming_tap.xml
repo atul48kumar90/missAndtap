@@ -4,53 +4,70 @@
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
-    android:padding="32dp">
+    android:background="@drawable/bg_gradient_default">
 
-    <!-- Emoji -->
+    <!-- Celebration Message - Brief message at top -->
+    <TextView
+        android:id="@+id/celebrationMessage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="You're special! ❤️"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:gravity="center"
+        android:alpha="0"
+        android:visibility="gone"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="60dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Emoji - Centered horizontally, positioned in upper-middle -->
     <TextView
         android:id="@+id/emojiText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="❤️"
-        android:textSize="120sp"
+        android:textSize="140sp"
         android:textColor="@android:color/white"
+        android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/titleText"
-        android:layout_marginTop="80dp" />
+        app:layout_constraintTop_toBottomOf="@+id/celebrationMessage"
+        android:layout_marginTop="60dp" />
 
-    <!-- Title -->
+    <!-- Title - Centered below emoji (caller name hidden for mystery) -->
     <TextView
         android:id="@+id/titleText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="You were missed ❤️"
-        android:textSize="28sp"
+        android:textSize="32sp"
         android:textStyle="bold"
         android:textColor="@android:color/white"
         android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/emojiText"
-        android:layout_marginTop="24dp" />
+        android:layout_marginTop="32dp" />
 
-    <!-- Message -->
+    <!-- Message - Centered below title -->
     <TextView
         android:id="@+id/messageText"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Someone is thinking of you"
         android:textSize="18sp"
         android:textColor="@android:color/white"
         android:gravity="center"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
+        android:alpha="0.9"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/titleText" />
+        app:layout_constraintTop_toBottomOf="@+id/titleText"
+        android:layout_marginTop="16dp" />
 
     <!-- Reaction Buttons (Optional) -->
     <LinearLayout
@@ -59,11 +76,11 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="24dp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/messageText">
+        app:layout_constraintTop_toBottomOf="@+id/messageText"
+        android:layout_marginTop="24dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnReactionHeart"
@@ -96,62 +113,61 @@
 
     </LinearLayout>
 
-    <!-- Caller Name (if available) -->
-    <TextView
-        android:id="@+id/callerNameText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:alpha="0.7"
-        android:layout_marginTop="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/messageText"
-        android:visibility="gone" />
-
-    <!-- Buttons Container -->
+    <!-- Buttons Container - Fixed at bottom with proper spacing -->
     <LinearLayout
         android:id="@+id/buttonsContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="60dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="80dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/reactionContainer">
+        app:layout_constraintStart_toStartOf="parent">
 
         <!-- Miss You Too Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMissYouToo"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="64dp"
             android:layout_weight="1"
-            android:text="Miss You Too ❤️"
-            android:textSize="18sp"
+            android:text="MISS YOU TOO ❤️"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:padding="20dp"
-            android:layout_marginEnd="12dp"
+            android:textColor="@android:color/white"
+            android:letterSpacing="0.05"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:layout_marginEnd="8dp"
+            android:minHeight="64dp"
+            android:elevation="8dp"
             app:backgroundTint="@color/primary_red"
-            app:cornerRadius="12dp" />
+            app:cornerRadius="16dp"
+            app:strokeWidth="0dp" />
 
         <!-- Dismiss Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDismiss"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="64dp"
             android:layout_weight="1"
-            android:text="Dismiss"
-            android:textSize="18sp"
-            android:padding="20dp"
-            android:layout_marginStart="12dp"
-            app:backgroundTint="@android:color/darker_gray"
-            app:cornerRadius="12dp" />
+            android:text="DISMISS"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:letterSpacing="0.05"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:layout_marginStart="8dp"
+            android:minHeight="64dp"
+            android:elevation="8dp"
+            app:backgroundTint="#FF424242"
+            app:cornerRadius="16dp"
+            app:strokeWidth="0dp" />
 
     </LinearLayout>
 

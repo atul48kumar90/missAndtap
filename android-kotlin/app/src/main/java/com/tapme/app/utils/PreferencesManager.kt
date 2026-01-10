@@ -12,8 +12,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_TOKEN = "auth_token"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_DEVICE_ID = "device_id"
-        private const val KEY_PAIR_ID = "pair_id"
-        private const val KEY_INVITE_CODE = "invite_code"
+        private const val KEY_TEMP_INVITE_CODE = "temp_invite_code"
     }
 
     fun saveToken(token: String) = prefs.edit().putString(KEY_TOKEN, token).apply()
@@ -26,11 +25,9 @@ class PreferencesManager(context: Context) {
     fun saveDeviceId(deviceId: String) = prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
     fun getDeviceId(): String? = prefs.getString(KEY_DEVICE_ID, null)
 
-    fun savePairId(pairId: String?) = prefs.edit().putString(KEY_PAIR_ID, pairId).apply()
-    fun getPairId(): String? = prefs.getString(KEY_PAIR_ID, null)
-
-    fun saveInviteCode(code: String) = prefs.edit().putString(KEY_INVITE_CODE, code).apply()
-    fun getInviteCode(): String? = prefs.getString(KEY_INVITE_CODE, null)
+    fun saveTempInviteCode(code: String) = prefs.edit().putString(KEY_TEMP_INVITE_CODE, code).apply()
+    fun getTempInviteCode(): String? = prefs.getString(KEY_TEMP_INVITE_CODE, null)
+    fun clearTempInviteCode() = prefs.edit().remove(KEY_TEMP_INVITE_CODE).apply()
 
     fun clearAll() = prefs.edit().clear().apply()
 }

@@ -15,13 +15,13 @@
         android:label="Stats" />
 
     <fragment
-        android:id="@+id/pairingFragment"
-        android:name="com.tapme.app.ui.pairing.PairingFragment"
-        android:label="Pairing" />
-
-    <fragment
         android:id="@+id/whitelistFragment"
         android:name="com.tapme.app.ui.whitelist.WhitelistFragment"
         android:label="Allowed Tappers" />
+
+    <fragment
+        android:id="@+id/memoriesFragment"
+        android:name="com.tapme.app.ui.memories.MemoriesFragment"
+        android:label="Memories" />
 
 </navigation>

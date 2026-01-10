@@ -2,8 +2,10 @@
 <resources>
     <style name="Theme.TapMe" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary_red</item>
-        <item name="colorPrimaryVariant">@color/primary_red</item>
+        <item name="colorPrimaryVariant">@color/primary_red_dark</item>
         <item name="colorOnPrimary">@android:color/white</item>
+        <item name="android:statusBarColor">@color/primary_red</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
     </style>
     
     <!-- Full-screen theme for incoming tap (like incoming call) -->

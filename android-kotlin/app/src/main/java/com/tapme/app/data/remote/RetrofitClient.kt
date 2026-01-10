@@ -1,6 +1,7 @@
 package com.tapme.app.data.remote
 
 import android.content.Context
+import com.tapme.app.BuildConfig
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -22,7 +23,55 @@ object RetrofitClient {
         this.context = context.applicationContext
     }
 
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+    /**
+     * Custom logger that redacts sensitive information from HTTP logs
+     */
+    private class SecureLogger : HttpLoggingInterceptor.Logger {
+        // Headers that should be redacted
+        private val sensitiveHeaders = setOf(
+            "authorization",
+            "cookie",
+            "x-api-key",
+            "api-key",
+            "x-auth-token",
+            "x-access-token"
+        )
+
+        override fun log(message: String) {
+            // Redact sensitive headers
+            var sanitizedMessage = message
+            sensitiveHeaders.forEach { headerName ->
+                // Match Authorization: Bearer <token> or Authorization: <token>
+                val pattern = Regex("$headerName:\\s*(Bearer\\s+)?[^\\r\\n]+", RegexOption.IGNORE_CASE)
+                sanitizedMessage = sanitizedMessage.replace(pattern) { matchResult ->
+                    val prefix = matchResult.value.substringBefore(":")
+                    "$prefix: [REDACTED]"
+                }
+            }
+            
+            // Also redact tokens in URL query parameters or response bodies
+            sanitizedMessage = sanitizedMessage.replace(
+                Regex("token=[^&\\r\\n\\s]+", RegexOption.IGNORE_CASE),
+                "token=[REDACTED]"
+            )
+            sanitizedMessage = sanitizedMessage.replace(
+                Regex("\"token\"\\s*:\\s*\"[^\"]+\"", RegexOption.IGNORE_CASE),
+                "\"token\": \"[REDACTED]\""
+            )
+            sanitizedMessage = sanitizedMessage.replace(
+                Regex("\"authToken\"\\s*:\\s*\"[^\"]+\"", RegexOption.IGNORE_CASE),
+                "\"authToken\": \"[REDACTED]\""
+            )
+            sanitizedMessage = sanitizedMessage.replace(
+                Regex("\"accessToken\"\\s*:\\s*\"[^\"]+\"", RegexOption.IGNORE_CASE),
+                "\"accessToken\": \"[REDACTED]\""
+            )
+            
+            android.util.Log.d("OkHttp", sanitizedMessage)
+        }
+    }
+
+    private val loggingInterceptor = HttpLoggingInterceptor(SecureLogger()).apply {
         level = if (BuildConfig.DEBUG) {
             HttpLoggingInterceptor.Level.BODY
         } else {

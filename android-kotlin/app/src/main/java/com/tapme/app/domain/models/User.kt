@@ -4,6 +4,5 @@ data class User(
     val id: String,
     val deviceId: String,
     val userCode: String? = null,
-    val pairId: String? = null,
     val premium: Boolean = false
 )

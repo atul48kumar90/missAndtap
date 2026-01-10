@@ -34,9 +34,9 @@ object EmojiValidator {
             char.code in 0x1F300..0x1F5FF || // Miscellaneous Symbols and Pictographs
             char.code in 0x1F680..0x1F6FF || // Transport and Map Symbols
             char.code in 0x1F1E0..0x1F1FF || // Regional Indicator Symbols
-            char.code in 0x200D || // Zero Width Joiner
-            char.code in 0xFE0F || // Variation Selector-16
-            char.code in 0x20E3 // Combining Enclosing Keycap
+            char.code == 0x200D || // Zero Width Joiner
+            char.code == 0xFE0F || // Variation Selector-16
+            char.code == 0x20E3 // Combining Enclosing Keycap
         }
     }
 

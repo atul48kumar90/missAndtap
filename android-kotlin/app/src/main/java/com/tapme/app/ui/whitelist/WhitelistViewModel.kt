@@ -88,7 +88,7 @@ class WhitelistViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun addTapper(userCode: String) {
+    fun addTapper(userCode: String, nickname: String? = null) {
         viewModelScope.launch {
             val token = preferencesManager.getToken()
             if (token == null) {
@@ -99,7 +99,7 @@ class WhitelistViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val response = RetrofitClient.apiService.addTapper(
                     "Bearer $token",
-                    com.tapme.app.data.remote.AddTapperRequest(userCode = userCode)
+                    com.tapme.app.data.remote.AddTapperRequest(userCode = userCode, nickname = nickname)
                 )
                 if (response.isSuccessful && response.body()?.success == true) {
                     _success.value = response.body()!!.message

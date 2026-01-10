@@ -12,14 +12,19 @@ object DateFormatter {
     fun formatTimeAgo(dateTime: Date): String {
         val now = Date()
         val difference = now.time - dateTime.time
-        val minutes = difference / (60 * 1000)
-        val hours = difference / (60 * 60 * 1000)
-        val days = difference / (24 * 60 * 60 * 1000)
+        
+        // Calculate absolute values to avoid negative differences
+        val absDifference = kotlin.math.abs(difference)
+        
+        val seconds = absDifference / 1000
+        val minutes = absDifference / (60 * 1000)
+        val hours = absDifference / (60 * 60 * 1000)
+        val days = absDifference / (24 * 60 * 60 * 1000)
 
         return when {
-            minutes < 1 -> "just now"
-            hours < 1 -> "${minutes}m ago"
-            days < 1 -> "${hours}h ago"
+            seconds < 60 -> "just now"
+            minutes < 60 -> "${minutes}m ago"
+            hours < 24 -> "${hours}h ago"
             days < 7 -> "${days}d ago"
             else -> formatDate(dateTime)
         }
