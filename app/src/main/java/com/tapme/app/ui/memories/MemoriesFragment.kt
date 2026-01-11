@@ -106,7 +106,10 @@ class MemoriesFragment : Fragment() {
                 }
                 is MemoriesState.Error -> {
                     loadingIndicator.visibility = View.GONE
-                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                    // Suppress errors during initial authentication
+                    if (!com.tapme.app.utils.AuthenticationManager.isInInitialAuthentication()) {
+                        Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }

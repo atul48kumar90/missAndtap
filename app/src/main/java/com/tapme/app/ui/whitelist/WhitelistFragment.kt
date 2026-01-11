@@ -122,7 +122,10 @@ class WhitelistFragment : Fragment() {
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
             error?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+                // Suppress errors during initial authentication
+                if (!com.tapme.app.utils.AuthenticationManager.isInInitialAuthentication()) {
+                    Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+                }
             }
         }
 

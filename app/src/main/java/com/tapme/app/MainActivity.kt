@@ -13,6 +13,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.messaging.FirebaseMessaging
 import com.tapme.app.utils.PreferencesManager
+import com.tapme.app.utils.AuthenticationManager
 import android.util.Log
 import com.tapme.app.data.remote.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +24,9 @@ import android.provider.Settings
 class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var preferencesManager: PreferencesManager
+    private var isLoadingOverlayVisible = false
+    private var isInitialAuthentication = true
+    private val INITIAL_AUTH_TIMEOUT_MS = 15000L // 15 seconds timeout
     
     private val tokenInvalidReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -50,6 +54,20 @@ class MainActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             registerReceiver(tokenInvalidReceiver, filter)
         }
+
+        // Show loading overlay during initial authentication
+        showLoadingOverlay()
+        isInitialAuthentication = true
+        AuthenticationManager.setInitialAuthentication(true)
+        
+        // Set timeout to hide loading even if auth fails
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (isInitialAuthentication && isLoadingOverlayVisible) {
+                isInitialAuthentication = false
+                AuthenticationManager.setInitialAuthentication(false)
+                hideLoadingOverlay()
+            }
+        }, INITIAL_AUTH_TIMEOUT_MS)
 
         // Register/Login user on app start
         registerUser()
@@ -131,6 +149,12 @@ class MainActivity : AppCompatActivity() {
         val existingToken = preferencesManager.getToken()
         if (existingToken != null) {
             Log.d("MainActivity", "User already registered. Updating FCM token if available.")
+            // User already authenticated - hide loading if shown
+            if (isInitialAuthentication) {
+                isInitialAuthentication = false
+                AuthenticationManager.setInitialAuthentication(false)
+                hideLoadingOverlay()
+            }
             // Just update FCM token if available
             updateFcmToken(deviceId)
             return
@@ -194,12 +218,70 @@ class MainActivity : AppCompatActivity() {
                     // Save user ID
                     preferencesManager.saveUserId(authResponse.user.id)
                     Log.d("MainActivity", "✅ User registered successfully. Token saved.")
+                    
+                    // Hide loading overlay on main thread
+                    CoroutineScope(Dispatchers.Main).launch {
+                        if (isInitialAuthentication) {
+                            isInitialAuthentication = false
+                            AuthenticationManager.setInitialAuthentication(false)
+                            hideLoadingOverlay()
+                        }
+                    }
                 } else {
                     Log.e("MainActivity", "Registration failed: ${response.message()}")
+                    // Hide loading after a delay (might retry)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        kotlinx.coroutines.delay(2000) // Wait 2 seconds before hiding
+                        if (isInitialAuthentication) {
+                            isInitialAuthentication = false
+                            AuthenticationManager.setInitialAuthentication(false)
+                            hideLoadingOverlay()
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Registration error", e)
+                // Hide loading after a delay (might retry)
+                CoroutineScope(Dispatchers.Main).launch {
+                    kotlinx.coroutines.delay(2000) // Wait 2 seconds before hiding
+                        if (isInitialAuthentication) {
+                            isInitialAuthentication = false
+                            AuthenticationManager.setInitialAuthentication(false)
+                            hideLoadingOverlay()
+                        }
+                }
             }
         }
     }
+    
+    private fun showLoadingOverlay() {
+        if (isLoadingOverlayVisible) return
+        
+        runOnUiThread {
+            try {
+                val overlayContainer = findViewById<android.view.View>(R.id.loadingOverlayContainer)
+                if (overlayContainer != null) {
+                    overlayContainer.visibility = android.view.View.VISIBLE
+                    isLoadingOverlayVisible = true
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error showing loading overlay", e)
+            }
+        }
+    }
+    
+    private fun hideLoadingOverlay() {
+        if (!isLoadingOverlayVisible) return
+        
+        runOnUiThread {
+            try {
+                val overlayContainer = findViewById<android.view.View>(R.id.loadingOverlayContainer)
+                overlayContainer?.visibility = android.view.View.GONE
+                isLoadingOverlayVisible = false
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error hiding loading overlay", e)
+            }
+        }
+    }
+    
 }

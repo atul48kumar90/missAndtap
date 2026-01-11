@@ -40,8 +40,10 @@ class StatsFragment : Fragment() {
                     updateStats(view, state)
                 }
                 is com.tapme.app.ui.tap.TapState.Error -> {
-                    // Show error message
-                    android.widget.Toast.makeText(requireContext(), state.message, android.widget.Toast.LENGTH_SHORT).show()
+                    // Suppress errors during initial authentication
+                    if (!com.tapme.app.utils.AuthenticationManager.isInInitialAuthentication()) {
+                        android.widget.Toast.makeText(requireContext(), state.message, android.widget.Toast.LENGTH_SHORT).show()
+                    }
                     android.util.Log.e("StatsFragment", "Failed to load stats: ${state.message}")
                 }
                 else -> {

@@ -99,7 +99,10 @@ class TapFragment : Fragment() {
                 }
                 is TapState.Error -> {
                     loadingIndicator.visibility = View.GONE
-                    Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    // Suppress errors during initial authentication
+                    if (!com.tapme.app.utils.AuthenticationManager.isInInitialAuthentication()) {
+                        Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
                 is TapState.NoRecipients -> {
                     loadingIndicator.visibility = View.GONE
