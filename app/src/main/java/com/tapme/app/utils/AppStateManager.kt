@@ -40,17 +40,23 @@ class AppStateManager private constructor() {
 
 class AppStateLifecycleCallback : Application.ActivityLifecycleCallbacks {
     
-    override fun onActivityStarted(activity: Activity) {
+    override fun onActivityResumed(activity: Activity) {
+        // Activity is resumed and visible to user - app is in foreground
         AppStateManager.getInstance().onActivityStarted()
     }
     
+    override fun onActivityPaused(activity: Activity) {
+        // Activity is paused - app might be going to background
+        // Don't set to background yet, wait for onActivityStopped
+    }
+    
     override fun onActivityStopped(activity: Activity) {
+        // Activity is stopped and no longer visible - app is in background
         AppStateManager.getInstance().onActivityStopped()
     }
     
+    override fun onActivityStarted(activity: Activity) {}
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-    override fun onActivityResumed(activity: Activity) {}
-    override fun onActivityPaused(activity: Activity) {}
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
     override fun onActivityDestroyed(activity: Activity) {}
 }

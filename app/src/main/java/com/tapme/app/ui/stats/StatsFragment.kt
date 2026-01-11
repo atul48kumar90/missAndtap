@@ -40,7 +40,9 @@ class StatsFragment : Fragment() {
                     updateStats(view, state)
                 }
                 is com.tapme.app.ui.tap.TapState.Error -> {
-                    // Show error
+                    // Show error message
+                    android.widget.Toast.makeText(requireContext(), state.message, android.widget.Toast.LENGTH_SHORT).show()
+                    android.util.Log.e("StatsFragment", "Failed to load stats: ${state.message}")
                 }
                 else -> {
                     // Loading or other states

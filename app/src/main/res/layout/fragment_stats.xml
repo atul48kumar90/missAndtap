@@ -14,6 +14,8 @@
         android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
+        android:fontFamily="serif"
+        android:letterSpacing="0.02"
         android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -52,7 +54,9 @@
                     android:text="0"
                     android:textSize="36sp"
                     android:textStyle="bold"
-                    android:textColor="@color/primary_red" />
+                    android:textColor="@color/primary_red"
+                    android:fontFamily="serif"
+                    android:letterSpacing="0.02" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -110,7 +114,9 @@
                         android:text="0"
                         android:textSize="36sp"
                         android:textStyle="bold"
-                        android:textColor="@color/accent_pink" />
+                        android:textColor="@color/accent_pink"
+                        android:fontFamily="serif"
+                        android:letterSpacing="0.02" />
 
                     <TextView
                         android:layout_width="wrap_content"

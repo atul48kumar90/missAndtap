@@ -82,14 +82,9 @@ class TapFragment : Fragment() {
             recipientAdapter?.let { adapter ->
                 adapter.notifyDataSetChanged()
             }
-            // Show/hide tap buttons based on selection
-            if (recipient != null) {
-                tapButtonsScrollView.visibility = View.VISIBLE
-                enableTapButtons(view, true)
-            } else {
-                tapButtonsScrollView.visibility = View.GONE
-                enableTapButtons(view, false)
-            }
+            // Always show tap buttons, but disable them if no recipient selected
+            tapButtonsScrollView.visibility = View.VISIBLE
+            enableTapButtons(recipient != null)
         }
 
         // Observe view model state
@@ -110,7 +105,9 @@ class TapFragment : Fragment() {
                     loadingIndicator.visibility = View.GONE
                     noRecipientsText.visibility = View.VISIBLE
                     recipientList.visibility = View.GONE
-                    tapButtonsScrollView.visibility = View.GONE
+                    // Always show tap buttons, but disabled
+                    tapButtonsScrollView.visibility = View.VISIBLE
+                    enableTapButtons(false)
                 }
             }
         }
@@ -120,7 +117,9 @@ class TapFragment : Fragment() {
         if (tappers.isEmpty()) {
             recipientList.visibility = View.GONE
             noRecipientsText.visibility = View.VISIBLE
-            tapButtonsScrollView.visibility = View.GONE
+            // Always show tap buttons, but disabled
+            tapButtonsScrollView.visibility = View.VISIBLE
+            enableTapButtons(false)
         } else {
             recipientList.visibility = View.VISIBLE
             noRecipientsText.visibility = View.GONE
@@ -130,18 +129,24 @@ class TapFragment : Fragment() {
                 { recipient -> viewModel.selectRecipient(recipient) }
             )
             recipientList.adapter = recipientAdapter
+            // Enable buttons if recipient is selected
+            enableTapButtons(viewModel.selectedRecipient.value != null)
         }
     }
 
-    private fun enableTapButtons(view: View, enabled: Boolean) {
+    private fun enableTapButtons(enabled: Boolean) {
+        val rootView = view ?: return
         val buttons = listOf(
             R.id.btnHappyMiss, R.id.btnSadMiss, R.id.btnNaughtyMiss, R.id.btnLovingMiss,
             R.id.btnExcitedMiss, R.id.btnSleepyMiss, R.id.btnPlayfulMiss, R.id.btnThinkingMiss,
             R.id.btnRomanticMiss, R.id.btnCustomEmoji
         )
         buttons.forEach { buttonId ->
-            view.findViewById<View>(buttonId)?.isEnabled = enabled
-            view.findViewById<View>(buttonId)?.alpha = if (enabled) 1.0f else 0.5f
+            rootView.findViewById<View>(buttonId)?.apply {
+                isClickable = enabled
+                isFocusable = enabled
+                alpha = if (enabled) 1.0f else 0.4f // More visually disabled
+            }
         }
     }
 

@@ -44,7 +44,7 @@ class FcmService : FirebaseMessagingService() {
         sendRegistrationToServer(token)
     }
 
-    private fun handleDataMessage(data: Map<String, String>, notification: RemoteMessage.Notification?) {
+    private fun handleDataMessage(data: Map<String, String>, notification: RemoteMessage.Notification? = null) {
         val type = data["type"]
         val toUserId = data["toUserId"] // Recipient user ID (current user)
         val fromUserId = data["fromUserId"] // Sender user ID
@@ -52,6 +52,10 @@ class FcmService : FirebaseMessagingService() {
         val customEmoji = data["customEmoji"]
         val message = data["message"]
         val emoji = data["emoji"] ?: "❤️"
+        
+        // Debug logging
+        Log.d(TAG, "handleDataMessage - type: $type, fromUserId: '$fromUserId', toUserId: '$toUserId', tapType: '$tapTypeStr'")
+        Log.d(TAG, "handleDataMessage - data map: $data")
         
         when (type) {
             "tap" -> {
@@ -72,15 +76,26 @@ class FcmService : FirebaseMessagingService() {
                 val silentModeManager = SilentModeManager(this)
                 val isSilentMode = silentModeManager.isSilentModeActive()
                 
-                if (isAppForeground && fromUserId != null) {
-                    // App is in foreground - show full-screen like incoming call
+                // Always show fullscreen if app is in foreground and we have fromUserId
+                // Check if fromUserId is not null/empty (backend sends empty string if null)
+                val hasFromUserId = !fromUserId.isNullOrBlank()
+                
+                Log.d(TAG, "Tap notification - isAppForeground: $isAppForeground, hasFromUserId: $hasFromUserId, fromUserId: '$fromUserId'")
+                
+                // Always show fullscreen if we have fromUserId (works in foreground and background)
+                // Fullscreen activity uses FLAG_ACTIVITY_NEW_TASK which works from background
+                if (hasFromUserId) {
+                    // Show full-screen like incoming call (works in foreground and background)
                     // Play sound if not in silent mode
                     if (!isSilentMode && tapType != null) {
                         SoundManager.getInstance(this).playSound(tapType)
                     }
-                    showFullScreenTap(fromUserId, tapTypeStr ?: "", customEmoji, message)
+                    // fromUserId is guaranteed to be non-null here due to hasFromUserId check
+                    showFullScreenTap(fromUserId!!, tapTypeStr ?: "", customEmoji, message)
+                    Log.d(TAG, "✅ Showing fullscreen tap (foreground: $isAppForeground, fromUserId: $fromUserId)")
                 } else {
-                    // App is in background - show normal notification (silent if in silent mode)
+                    Log.d(TAG, "⚠️ No fromUserId, showing normal notification instead of fullscreen (foreground: $isAppForeground, hasFromUserId: $hasFromUserId, fromUserId: '$fromUserId')")
+                    // Fallback: show normal notification if fromUserId is missing (shouldn't happen)
                     if (!isSilentMode) {
                         if (tapType != null) {
                             vibrate(tapType)
@@ -90,14 +105,14 @@ class FcmService : FirebaseMessagingService() {
                         }
                     }
                     
-                    val title = if (isCustomEmoji) {
-                        notification?.title ?: "You were missed $customEmoji"
+                    // Get title and body from data (since notification payload is removed)
+                    val title = data["title"] ?: if (isCustomEmoji) {
+                        "You were missed $customEmoji"
                     } else {
-                        notification?.title ?: tapType?.notificationTitle ?: "You were missed ❤️"
+                        tapType?.notificationTitle ?: "You were missed ❤️"
                     }
                     
-                    // Use personalized message from notification (backend calculates it)
-                    val body = notification?.body ?: if (message != null && message.isNotEmpty()) {
+                    val body = data["body"] ?: if (message != null && message.isNotEmpty()) {
                         message
                     } else if (isCustomEmoji) {
                         "Someone is thinking of you"

@@ -5,7 +5,22 @@
         <item name="colorPrimaryVariant">@color/primary_red_dark</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="android:statusBarColor">@color/primary_red</item>
-        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:navigationBarColor">@color/bg_light</item>
+        <item name="android:windowBackground">@color/bg_light</item>
+        <!-- Romantic typography -->
+        <item name="android:textAppearance">@style/TextAppearance.TapMe.Body</item>
+        <item name="textAppearanceHeadline1">@style/TextAppearance.TapMe.Headline</item>
+    </style>
+    
+    <!-- Romantic text styles -->
+    <style name="TextAppearance.TapMe.Body" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+    
+    <style name="TextAppearance.TapMe.Headline" parent="TextAppearance.MaterialComponents.Headline1">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
     
     <!-- Full-screen theme for incoming tap (like incoming call) -->

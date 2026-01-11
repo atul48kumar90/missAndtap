@@ -35,15 +35,28 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="My User Code"
-                        android:textSize="12sp"
-                        android:textColor="@color/text_secondary"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.05"
-                        android:layout_marginBottom="12dp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👤"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="8dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="My User Code"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_secondary"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:fontFamily="sans-serif-light" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/myUserCodeText"
@@ -53,7 +66,8 @@
                         android:textSize="36sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary_red"
-                        android:letterSpacing="0.1"
+                        android:fontFamily="serif"
+                        android:letterSpacing="0.02"
                         android:layout_marginBottom="20dp" />
 
                     <LinearLayout
@@ -68,12 +82,13 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginEnd="8dp"
-                            android:text="COPY"
+                            android:text="📋 COPY"
                             android:textColor="@color/primary_red"
                             app:backgroundTint="@color/bg_light"
                             app:cornerRadius="12dp"
-                            app:strokeWidth="1dp"
+                            app:strokeWidth="2dp"
                             app:strokeColor="@color/primary_red"
+                            android:textStyle="bold"
                             style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
                         <com.google.android.material.button.MaterialButton
@@ -82,10 +97,11 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="8dp"
-                            android:text="SHARE"
+                            android:text="✨ SHARE"
                             android:textColor="@android:color/white"
                             app:backgroundTint="@color/primary_red"
-                            app:cornerRadius="12dp" />
+                            app:cornerRadius="12dp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
@@ -119,14 +135,28 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Add Allowed Tapper"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="16dp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="➕"
+                            android:textSize="20sp"
+                            android:layout_marginEnd="8dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Add Allowed Tapper"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:fontFamily="serif"
+                            android:letterSpacing="0.01" />
+                    </LinearLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
@@ -175,10 +205,12 @@
                         android:id="@+id/btnAddTapper"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Add to Allowed Tappers"
+                        android:text="❤️ Add to Allowed Tappers"
                         android:textColor="@android:color/white"
                         app:backgroundTint="@color/primary_red"
-                        app:cornerRadius="12dp" />
+                        app:cornerRadius="12dp"
+                        android:textStyle="bold"
+                        android:textSize="15sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -197,14 +229,28 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Allowed Tappers"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="16dp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="💝"
+                            android:textSize="20sp"
+                            android:layout_marginEnd="8dp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Allowed Tappers"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:fontFamily="serif"
+                            android:letterSpacing="0.01" />
+                    </LinearLayout>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/allowedTappersList"

@@ -3,16 +3,31 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/bg_card"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical">
+        android:padding="20dp"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <!-- Avatar/Icon -->
+        <TextView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="👤"
+            android:textSize="28sp"
+            android:gravity="center"
+            android:background="@drawable/bg_avatar"
+            android:layout_marginEnd="16dp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -27,15 +42,19 @@
                 android:text="Mom"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black" />
+                android:textColor="@color/text_primary"
+                android:fontFamily="serif"
+                android:letterSpacing="0.01" />
 
             <TextView
                 android:id="@+id/tapperCodeSubtext"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="\@ABC123"
-                android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"
+                android:textSize="13sp"
+                android:textColor="@color/text_secondary"
+                android:fontFamily="sans-serif-light"
+                android:layout_marginTop="4dp"
                 android:visibility="gone" />
         </LinearLayout>
 
@@ -45,15 +64,18 @@
             android:layout_height="wrap_content"
             android:text="Added 2 days ago"
             android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginEnd="8dp" />
+            android:textColor="@color/text_secondary"
+            android:fontFamily="sans-serif-light"
+            android:layout_marginEnd="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRemove"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Remove"
+            android:text="🗑️ Remove"
             android:textColor="@android:color/holo_red_dark"
+            android:textSize="13sp"
+            android:textStyle="bold"
             style="@style/Widget.MaterialComponents.Button.TextButton" />
 
     </LinearLayout>

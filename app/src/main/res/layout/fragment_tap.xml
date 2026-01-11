@@ -60,7 +60,8 @@
                         android:textSize="42sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary_red"
-                        android:fontFamily="sans-serif-medium" />
+                        android:fontFamily="serif"
+                        android:letterSpacing="0.02" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -100,7 +101,8 @@
                         android:textSize="32sp"
                         android:textStyle="bold"
                         android:textColor="@color/accent_pink"
-                        android:fontFamily="sans-serif-medium" />
+                        android:fontFamily="serif"
+                        android:letterSpacing="0.02" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -140,7 +142,7 @@
                         android:textSize="32sp"
                         android:textStyle="bold"
                         android:textColor="@color/accent_green"
-                        android:fontFamily="sans-serif-medium" />
+                        android:fontFamily="sans-serif-light" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -356,7 +358,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -396,7 +398,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -445,7 +447,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -485,7 +487,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -534,7 +536,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -574,7 +576,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -623,7 +625,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -663,7 +665,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -711,7 +713,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -752,7 +754,7 @@
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_red"
                                 android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
+                                android:fontFamily="sans-serif-light"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>

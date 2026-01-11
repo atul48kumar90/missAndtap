@@ -48,7 +48,10 @@ class StreakVisualizationView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
-        if (streakDays == 0) return
+        if (streakDays == 0) {
+            drawEmptyState(canvas)
+            return
+        }
         
         val width = width.toFloat()
         val height = height.toFloat()
@@ -105,5 +108,21 @@ class StreakVisualizationView @JvmOverloads constructor(
             val milestoneY = height - padding - (30 * segmentHeight)
             canvas.drawText("30", startX + 30f, milestoneY + 5f, textPaint)
         }
+    }
+    
+    private fun drawEmptyState(canvas: Canvas) {
+        val width = width.toFloat()
+        val height = height.toFloat()
+        
+        // Draw empty state message
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = ContextCompat.getColor(context, R.color.text_tertiary)
+            textSize = 14f
+            textAlign = Paint.Align.CENTER
+        }
+        
+        val message = "Start a streak to see it grow! 🌱"
+        val y = height / 2f
+        canvas.drawText(message, width / 2f, y, textPaint)
     }
 }
