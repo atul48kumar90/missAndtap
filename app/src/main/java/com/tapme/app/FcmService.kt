@@ -82,17 +82,44 @@ class FcmService : FirebaseMessagingService() {
                 
                 Log.d(TAG, "Tap notification - isAppForeground: $isAppForeground, hasFromUserId: $hasFromUserId, fromUserId: '$fromUserId'")
                 
-                // Always show fullscreen if we have fromUserId (works in foreground and background)
-                // Fullscreen activity uses FLAG_ACTIVITY_NEW_TASK which works from background
+                // Always show fullscreen if we have fromUserId (works in foreground, background, and when app is killed)
                 if (hasFromUserId) {
-                    // Show full-screen like incoming call (works in foreground and background)
-                    // Play sound if not in silent mode
-                    if (!isSilentMode && tapType != null) {
-                        SoundManager.getInstance(this).playSound(tapType)
+                    // Get title and body for notification
+                    val title = data["title"] ?: if (isCustomEmoji) {
+                        "You were missed $customEmoji"
+                    } else {
+                        tapType?.notificationTitle ?: "You were missed ❤️"
                     }
-                    // fromUserId is guaranteed to be non-null here due to hasFromUserId check
-                    showFullScreenTap(fromUserId!!, tapTypeStr ?: "", customEmoji, message)
-                    Log.d(TAG, "✅ Showing fullscreen tap (foreground: $isAppForeground, fromUserId: $fromUserId)")
+                    
+                    val body = data["body"] ?: if (message != null && message.isNotEmpty()) {
+                        message
+                    } else if (isCustomEmoji) {
+                        "Someone is thinking of you"
+                    } else {
+                        tapType?.notificationBody ?: "Someone is thinking of you"
+                    }
+                    
+                    if (isAppForeground) {
+                        // App is in foreground: show activity directly (faster, more reliable)
+                        if (!isSilentMode && tapType != null) {
+                            SoundManager.getInstance(this).playSound(tapType)
+                        }
+                        showFullScreenTap(fromUserId!!, tapTypeStr ?: "", customEmoji, message)
+                        Log.d(TAG, "✅ Showing fullscreen tap directly (foreground, fromUserId: $fromUserId)")
+                    } else {
+                        // App is in background or killed: show notification with full-screen intent
+                        // Full-screen intent triggers when device is locked
+                        // Content intent makes notification clickable when device is unlocked
+                        // Android 10+ blocks direct activity starts from background services
+                        Log.d(TAG, "App is in background/killed, showing full-screen intent notification (fromUserId: $fromUserId)")
+                        
+                        // Show notification with full-screen intent (triggers when locked) and content intent (clickable when unlocked)
+                        showFullScreenNotification(fromUserId!!, tapTypeStr ?: "", customEmoji, message, title, body, tapType, isSilentMode)
+                        
+                        Log.d(TAG, "✅ Full-screen notification shown (background/killed, fromUserId: $fromUserId)")
+                        Log.d(TAG, "   • Device locked: Full-screen intent will trigger automatically")
+                        Log.d(TAG, "   • Device unlocked: User can tap notification to open fullscreen")
+                    }
                 } else {
                     Log.d(TAG, "⚠️ No fromUserId, showing normal notification instead of fullscreen (foreground: $isAppForeground, hasFromUserId: $hasFromUserId, fromUserId: '$fromUserId')")
                     // Fallback: show normal notification if fromUserId is missing (shouldn't happen)
@@ -151,6 +178,87 @@ class FcmService : FirebaseMessagingService() {
             TapType.fromString(tapType) ?: TapType.LOVING_MISS
         }
         vibrate(tapTypeEnum)
+    }
+    
+    private fun showFullScreenNotification(fromUserId: String, tapType: String, customEmoji: String?, message: String?, title: String, body: String, tapTypeEnum: TapType?, isSilent: Boolean) {
+        val channelId = "tap_fullscreen_channel"
+        val notificationId = System.currentTimeMillis().toInt()
+        
+        // Create notification channel with HIGH importance (required for full-screen intents)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Tap Full-Screen Notifications",
+                NotificationManager.IMPORTANCE_HIGH // HIGH importance required for full-screen intents
+            ).apply {
+                description = "Full-screen notifications when someone taps you"
+                enableVibration(true)
+                vibrationPattern = tapTypeEnum?.vibrationPattern ?: TapType.LOVING_MISS.vibrationPattern
+                lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+        
+        // Create full-screen intent (launches IncomingTapActivity)
+        val fullScreenIntent = IncomingTapActivity.createIntent(
+            this,
+            fromUserId,
+            tapType,
+            customEmoji,
+            message
+        )
+        fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        fullScreenIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        
+        val fullScreenPendingIntent = PendingIntent.getActivity(
+            this,
+            notificationId,
+            fullScreenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        // Build notification with full-screen intent
+        // Also set content intent so notification is clickable when device is unlocked
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // You can add custom icon later
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL) // Category CALL for call-like behavior
+            .setFullScreenIntent(fullScreenPendingIntent, true) // This makes it fullscreen when device is locked
+            .setContentIntent(fullScreenPendingIntent) // This makes notification clickable when device is unlocked
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        
+        // Only add sound and vibration if not in silent mode
+        if (!isSilent) {
+            val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            notificationBuilder
+                .setSound(defaultSoundUri)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+            
+            // Add vibration pattern if available
+            val vibrationPattern = tapTypeEnum?.vibrationPattern ?: TapType.LOVING_MISS.vibrationPattern
+            notificationBuilder.setVibrate(vibrationPattern)
+        } else {
+            // Silent mode: no sound, no vibration
+            notificationBuilder.setDefaults(0)
+        }
+        
+        // Show notification (full-screen intent will trigger automatically)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(notificationId, notificationBuilder.build())
+        
+        // Also vibrate immediately (notification vibration may be delayed)
+        if (!isSilent) {
+            val tapTypeForVibration = if (customEmoji != null) {
+                TapType.LOVING_MISS // Default vibration for custom emoji
+            } else {
+                tapTypeEnum ?: TapType.LOVING_MISS
+            }
+            vibrate(tapTypeForVibration)
+        }
     }
     
     private fun showNotification(title: String, body: String, tapType: TapType?, customEmoji: String?, isSilent: Boolean = false) {

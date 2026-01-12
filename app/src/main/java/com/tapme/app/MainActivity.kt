@@ -14,12 +14,14 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.messaging.FirebaseMessaging
 import com.tapme.app.utils.PreferencesManager
 import com.tapme.app.utils.AuthenticationManager
+import com.tapme.app.utils.PermissionHelper
 import android.util.Log
 import com.tapme.app.data.remote.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.provider.Settings
+import android.widget.Toast
 
 class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
@@ -55,6 +57,9 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(tokenInvalidReceiver, filter)
         }
 
+        // Request notification permission (Android 13+)
+        PermissionHelper.requestNotificationPermission(this)
+        
         // Show loading overlay during initial authentication
         showLoadingOverlay()
         isInitialAuthentication = true
@@ -71,6 +76,9 @@ class MainActivity : AppCompatActivity() {
 
         // Register/Login user on app start
         registerUser()
+        
+        // Check notification permission and guide user if needed
+        checkNotificationPermissions()
 
         // Setup navigation
         val navHostFragment = supportFragmentManager
@@ -98,6 +106,38 @@ class MainActivity : AppCompatActivity() {
         if (preferencesManager.getToken() == null) {
             Log.d("MainActivity", "Token missing on resume. Re-registering...")
             registerUser()
+        }
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            PermissionHelper.REQUEST_NOTIFICATION_PERMISSION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    Log.d("MainActivity", "Notification permission granted")
+                } else {
+                    Log.w("MainActivity", "Notification permission denied")
+                    // Don't show toast immediately - user might have dismissed it intentionally
+                    // We'll check again later and guide them if needed
+                }
+            }
+        }
+    }
+    
+    private fun checkNotificationPermissions() {
+        if (!PermissionHelper.areNotificationsEnabled(this)) {
+            // Permission denied - we'll check again in onResume after a delay
+            // This gives the user a chance to grant permission if they just denied it
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (!PermissionHelper.areNotificationsEnabled(this)) {
+                    // Still not granted - silently log (don't spam user)
+                    Log.w("MainActivity", "Notification permission not granted. Notifications may not work.")
+                }
+            }, 2000) // Check after 2 seconds
         }
     }
     

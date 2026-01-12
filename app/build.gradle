@@ -23,15 +23,17 @@ android {
 
     buildTypes {
         debug {
-            // Local development API URL (Android emulator uses 10.0.2.2 for localhost)
-            buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/\""
+            // Production API URL - Use production backend for testing
+            buildConfigField "String", "API_BASE_URL", "\"https://tapme-backend-7itgz6kn7a-uc.a.run.app/api/\""
+            // To test locally, uncomment below and comment the line above:
+            // buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/\""
         }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // Production API URL - UPDATE THIS with your Cloud Run URL
-            buildConfigField "String", "API_BASE_URL", "\"https://YOUR-CLOUD-RUN-URL.a.run.app/api/\""
+            buildConfigField "String", "API_BASE_URL", "\"https://tapme-backend-7itgz6kn7a-uc.a.run.app/api/\""
         }
     }
     
