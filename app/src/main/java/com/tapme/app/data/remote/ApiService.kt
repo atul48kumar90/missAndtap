@@ -10,6 +10,12 @@ interface ApiService {
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
     
+    @POST("auth/update-fcm-token")
+    suspend fun updateFcmToken(
+        @Header("Authorization") token: String,
+        @Body request: UpdateFcmTokenRequest
+    ): Response<UpdateFcmTokenResponse>
+    
     // Taps
     @POST("taps/send")
     suspend fun sendTap(
@@ -74,6 +80,15 @@ interface ApiService {
 data class RegisterRequest(
     val deviceId: String,
     val fcmToken: String? = null
+)
+
+data class UpdateFcmTokenRequest(
+    val fcmToken: String
+)
+
+data class UpdateFcmTokenResponse(
+    val success: Boolean,
+    val message: String? = null
 )
 
 data class AuthResponse(

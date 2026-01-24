@@ -20,6 +20,10 @@ import com.tapme.app.utils.AppStateManager
 import com.tapme.app.utils.SilentModeManager
 import com.tapme.app.utils.SoundManager
 import com.tapme.app.utils.BadgeManager
+import com.tapme.app.data.remote.RetrofitClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class FcmService : FirebaseMessagingService() {
 
@@ -390,7 +394,34 @@ class FcmService : FirebaseMessagingService() {
     private fun sendRegistrationToServer(token: String) {
         // Send token to your backend
         // This should be called when token is refreshed
-        Log.d(TAG, "Sending token to server: $token")
+        Log.d(TAG, "Sending FCM token to server: $token")
+        
+        // Get auth token from preferences
+        val prefs = getSharedPreferences("tapme_prefs", Context.MODE_PRIVATE)
+        val authToken = prefs.getString("auth_token", null)
+        
+        if (authToken == null) {
+            Log.w(TAG, "No auth token available, cannot update FCM token. Will retry on next app start.")
+            return
+        }
+        
+        // Update FCM token on backend
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.apiService.updateFcmToken(
+                    "Bearer $authToken",
+                    com.tapme.app.data.remote.UpdateFcmTokenRequest(fcmToken = token)
+                )
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    Log.d(TAG, "✅ FCM token updated on backend successfully")
+                } else {
+                    Log.w(TAG, "Failed to update FCM token on backend: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating FCM token on backend", e)
+            }
+        }
     }
 
     companion object {

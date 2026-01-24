@@ -233,11 +233,39 @@ class MainActivity : AppCompatActivity() {
                 if (task.isSuccessful) {
                     val fcmToken = task.result
                     Log.d("MainActivity", "FCM token updated: $fcmToken")
-                    // Optionally update FCM token on backend (can be done later)
+                    // Send FCM token to backend
+                    sendFcmTokenToBackend(fcmToken)
+                } else {
+                    Log.w("MainActivity", "Failed to get FCM token: ${task.exception}")
                 }
             }
         } catch (e: Exception) {
-            // Ignore FCM update errors
+            Log.e("MainActivity", "Error getting FCM token", e)
+        }
+    }
+    
+    private fun sendFcmTokenToBackend(fcmToken: String) {
+        val token = preferencesManager.getToken()
+        if (token == null) {
+            Log.w("MainActivity", "No auth token available, cannot update FCM token")
+            return
+        }
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.apiService.updateFcmToken(
+                    "Bearer $token",
+                    com.tapme.app.data.remote.UpdateFcmTokenRequest(fcmToken = fcmToken)
+                )
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    Log.d("MainActivity", "✅ FCM token updated on backend successfully")
+                } else {
+                    Log.w("MainActivity", "Failed to update FCM token on backend: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error updating FCM token on backend", e)
+            }
         }
     }
 
